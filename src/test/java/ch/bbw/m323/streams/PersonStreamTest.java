@@ -1,11 +1,12 @@
 package ch.bbw.m323.streams;
 
-import java.util.List;
-
 import ch.bbw.m323.streams.PersonStreamTest.Person.Country;
 import ch.bbw.m323.streams.PersonStreamTest.Person.Gender;
 import org.assertj.core.api.WithAssertions;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 class PersonStreamTest implements WithAssertions {
 
@@ -50,7 +51,58 @@ class PersonStreamTest implements WithAssertions {
 				.toList() // eine List<String>
 		).containsExactly("BRENT", "LUCA", "MAY", "JOJO", "MAURICE", "ALICE", "LAURENCE", "SAMANTHA");
 	}
-	// end::sample[]
 
-	// TODO: add all your own Testcases here
+	@Test
+	void allNamesMaxFourChars() {
+		assertThat(people.stream().map(Person::name).filter(name -> name.length() <= 4).toList()
+		).containsOnly("Luca", "May", "Jojo");
+
+	}
+
+	@Test
+	void sumOfAllAges() {
+		assertThat(people.stream().mapToInt(Person::age).sum()
+		).isEqualTo(226);
+	}
+
+	@Test
+	void ageOfOldestPerson() {
+		assertThat(people.stream().mapToInt(Person::age).max().orElse(0)
+		).isEqualTo(67);
+	}
+
+	@Test
+	void allMaleCanadians() {
+		assertThat(people.stream()
+				.filter(person -> person.gender() == Gender.MALE && person.country().equals(canada))
+				.toList()
+		).hasSize(2).allSatisfy(x -> assertThat(x).isInstanceOf(Person.class));
+	}
+
+	@Test
+	void allNamesConnectedWithUnderline() {
+		assertThat(people.stream()
+				.map(Person::name)
+				.collect(Collectors.joining("_"))
+		).hasSize(51).contains("_");
+	}
+
+	@Test
+	void allWomenFromCountryWithMaxOneMilPopulation() {
+		assertThat(people.stream().filter(person -> person.gender()
+				.equals(Gender.FEMALE) && person.country()
+				.population() <= 1_000_000L).toList()
+		).isEmpty();
+	}
+	@Test
+	void allMenSortedByAge() {
+		assertThat(people.stream()
+				.filter(person -> person.gender() == Gender.MALE)
+				.sorted((p1, p2) -> Integer.compare(p1.age(), p2.age()))
+				.map(Person::name)
+				.toList()
+		).containsExactly("Maurice", "Luca", "Laurence", "Brent");
+	}
+
+
 }
