@@ -5,8 +5,12 @@ import ch.bbw.m323.streams.PersonStreamTest.Person.Gender;
 import org.assertj.core.api.WithAssertions;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 class PersonStreamTest implements WithAssertions {
 
@@ -104,5 +108,69 @@ class PersonStreamTest implements WithAssertions {
 		).containsExactly("Maurice", "Luca", "Laurence", "Brent");
 	}
 
+	@Test
+	void secondOldestFemalePersonWithLimit() {
+		assertThat(people.stream()
+				.filter(person -> person.gender() == Gender.FEMALE)
+				.sorted((p1, p2) -> Integer.compare(p2.age(), p1.age())) // Sort by age descending
+				.skip(1) // Skip the oldest
+				.limit(1) // Limit to the second oldest
+				.findFirst() // Get the second oldest
+		).get().extracting(Person::name).isEqualTo("Alice"); // Ensure the result is present
+	}
 
+	@Test
+	void allEvenAgesWithoutAge22andBetween0And100() {
+		assertThat(IntStream.range(0, 100)
+				.filter(number -> number % 2 == 0)
+				.boxed()
+				.filter(number -> !people.stream().map(Person::age).toList().contains(number))
+				.toList()
+		).hasSize(47).contains(0, 62, 98).doesNotContain(22);
+	}
+
+	@Test
+	void allLettersOfAllNameInAlphabeticalOrderWithFlatMap() {
+		assertThat(people.stream()
+				.map(Person::name)
+				.flatMap(name -> name.chars().mapToObj(c -> (char) c)).distinct()
+				.sorted()
+				.map(String::valueOf)
+				.collect(Collectors.joining())
+		).isEqualTo("ABJLMSacehijlmnortuy");
+	}
+
+	@Test
+	void listOfNamesInAlphabeticalOrderFirstAscThenDesc() {
+		List<String> combined = people.stream()
+				.map(Person::name)
+				.sorted()
+				.collect(Collectors.collectingAndThen(
+						Collectors.toList(),
+						sortedAsc -> {
+							List<String> sortedDesc = new ArrayList<>(sortedAsc);
+							sortedDesc.sort(Comparator.reverseOrder());
+							sortedAsc.addAll(sortedDesc);
+							return sortedAsc;
+						}
+				));
+
+		assertThat(combined)
+				.hasSize(people.size() * 2)
+				.startsWith("Alice")
+				.endsWith("Alice");
+	}
+
+	@Test
+	void youngestPersonOfEachCountryUsingGroupingBy() {
+		assertThat(
+				people.stream()
+						.collect(Collectors.groupingBy(Person::country,
+								Collectors.maxBy(Comparator.comparingInt(Person::age))))
+						.values().stream()
+						.filter(Optional::isPresent)
+						.map(Optional::get)
+						.toList()
+		).extracting(Person::name).containsOnly("Jojo", "Luca", "May");
+	}
 }
