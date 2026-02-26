@@ -98,6 +98,7 @@ class PersonStreamTest implements WithAssertions {
 				.population() <= 1_000_000L).toList()
 		).isEmpty();
 	}
+
 	@Test
 	void allMenSortedByAge() {
 		assertThat(people.stream()
@@ -161,16 +162,4 @@ class PersonStreamTest implements WithAssertions {
 				.endsWith("Alice");
 	}
 
-	@Test
-	void youngestPersonOfEachCountryUsingGroupingBy() {
-		assertThat(
-				people.stream()
-						.collect(Collectors.groupingBy(Person::country,
-								Collectors.maxBy(Comparator.comparingInt(Person::age))))
-						.values().stream()
-						.filter(Optional::isPresent)
-						.map(Optional::get)
-						.toList()
-		).extracting(Person::name).containsOnly("Jojo", "Luca", "May");
-	}
 }

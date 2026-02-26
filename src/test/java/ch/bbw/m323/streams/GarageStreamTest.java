@@ -1,13 +1,15 @@
 package ch.bbw.m323.streams;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.function.Predicate;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.assertj.core.api.WithAssertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Predicate;
 
 class GarageStreamTest implements WithAssertions {
 
@@ -42,22 +44,24 @@ class GarageStreamTest implements WithAssertions {
 
 	@Test
 	void namesOfCostumersWith2orMoreCars() {
-		Predicate<Inventory.Customer> customerWithMoreThanCars = customer -> customer.cars().size() >= 2;
-		var result = inventory.products().stream()
+		Predicate<Inventory.Customer> customerWithMoreThanCars = customer ->
+				Optional.ofNullable(customer.cars()).map(List::size).orElse(0) >= 2;
+		assertThat(Optional.ofNullable(inventory.products()).stream()
+				.flatMap(List::stream)
 				.filter(customerWithMoreThanCars)
 				.map(Inventory.Customer::customer)
-				.toList();
-
-		assertThat(result).hasSizeBetween(10, 11);
-
+				.toList()).hasSizeBetween(10, 11);
 	}
 	@Test
 	void allCarsWithUKWRadio() {
-		Predicate<Inventory.Customer.Car> carsWithUKWRadio = car -> car.radio() != null && Boolean.TRUE.equals(car.radio().ukw());
-		long count = inventory.products().stream()
-						.flatMap(customer -> customer.cars().stream())
-						.filter(carsWithUKWRadio)
-				.count();
-		assertThat(count).isIn(8L, 16L);
+		Predicate<Inventory.Customer.Car> carsWithUKWRadio = car ->
+				Optional.ofNullable(car.radio()).map(Inventory.Customer.Car.Radio::ukw).orElse(false);
+		assertThat(Optional.ofNullable(inventory.products()).stream()
+				.flatMap(List::stream)
+				.flatMap(customer -> Optional.ofNullable(customer.cars()).stream().flatMap(List::stream))
+				.filter(Objects::nonNull) // Exclude null cars
+				.filter(carsWithUKWRadio)
+				.count()).isIn(8L, 16L);
 	}
+
 }
