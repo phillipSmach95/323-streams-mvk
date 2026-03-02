@@ -5,12 +5,11 @@ import ch.bbw.m323.streams.PersonStreamTest.Person.Gender;
 import org.assertj.core.api.WithAssertions;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 class PersonStreamTest implements WithAssertions {
 
@@ -143,23 +142,10 @@ class PersonStreamTest implements WithAssertions {
 
 	@Test
 	void listOfNamesInAlphabeticalOrderFirstAscThenDesc() {
-		List<String> combined = people.stream()
-				.map(Person::name)
-				.sorted()
-				.collect(Collectors.collectingAndThen(
-						Collectors.toList(),
-						sortedAsc -> {
-							List<String> sortedDesc = new ArrayList<>(sortedAsc);
-							sortedDesc.sort(Comparator.reverseOrder());
-							sortedAsc.addAll(sortedDesc);
-							return sortedAsc;
-						}
-				));
-
-		assertThat(combined)
-				.hasSize(people.size() * 2)
-				.startsWith("Alice")
-				.endsWith("Alice");
+		assertThat(Stream.concat(
+				people.stream().map(Person::name).sorted(),
+				people.stream().map(Person::name).sorted(Comparator.reverseOrder())
+		).toList()).hasSize(people.size() * 2).startsWith("Alice").endsWith("Alice");
 	}
 
 }
